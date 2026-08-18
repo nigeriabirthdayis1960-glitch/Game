@@ -1,98 +1,141 @@
 import streamlit as st
 import random
+import time
 
-st.set_page_config(page_title="Status Simulator", page_icon="📱", layout="centered")
+# Set up clean mobile viewport layout
+st.set_page_config(page_title="Status", page_icon="📱", layout="centered")
 
-# Custom CSS to make it look clean on mobile
+# Custom CSS to mimic a premium social media app interface
 st.markdown("""
 <style>
-    .stApp { max-width: 600px; margin: 0 auto; }
-    .feed-box { border: 1px solid #e1e8ed; border-radius: 12px; padding: 15px; margin-bottom: 15px; background-color: #ffffff; }
-    .comment-box { margin-left: 20px; border-left: 3px solid #1da1f2; padding-left: 10px; margin-top: 10px; }
+    .stApp { background-color: #0f1419; color: #e7e9ea; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    [data-testid="stSidebar"] { background-color: #15181c !important; }
+    .header-container { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2f3336; padding-bottom: 15px; margin-bottom: 20px; }
+    .feed-card { background-color: #15181c; border: 1px solid #2f3336; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .user-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(45deg, #1d9bf0, #8ecdf8); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+    .npc-avatar { width: 32px; height: 32px; border-radius: 50%; background: #2f3336; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .username { font-weight: 700; color: #e7e9ea; }
+    .handle { color: #71767b; font-size: 14px; }
+    .post-text { font-size: 16px; line-height: 1.5; color: #e7e9ea; margin-bottom: 12px; }
+    .stat-badge { background-color: rgba(29, 155, 240, 0.1); color: #1d9bf0; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: bold; display: inline-block; }
+    .stat-badge-down { background-color: rgba(244, 33, 46, 0.1); color: #f4212e; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: bold; display: inline-block; }
+    .comment-section { border-top: 1px solid #2f3336; margin-top: 12px; padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .comment-item { display: flex; gap: 10px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; }
+    textarea { background-color: #15181c !important; color: #e7e9ea !important; border: 1px solid #2f3336 !important; border-radius: 12px !important; }
+    button { background-color: #1d9bf0 !important; color: white !important; border-radius: 9999px !important; border: none !important; font-weight: bold !important; width: 100% !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize Session State variables
-if "followers" not in st.session_state:
-    st.session_state.followers = 100
-if "reputation" not in st.session_state:
-    st.session_state.reputation = "Neutral 😄"
-if "history" not in st.session_state:
-    st.session_state.history = []
+# Initialize game states
+if "followers" not in st.session_state: st.session_state.followers = 1240
+if "clout" not in st.session_state: st.session_state.clout = 50
+if "history" not in st.session_state: st.session_state.history = []
 
-# Sidebar for Mobile Controls
+# Sidebar Navigation Panel
 with st.sidebar:
-    st.title("👤 Your Dashboard")
-    st.metric(label="Followers", value=f"{st.session_state.followers:,}")
-    st.subheader(f"Status: {st.session_state.reputation}")
-    
-    universe = st.selectbox(
-        "Choose Fandom / Universe",
-        ["Standard Internet", "Hogwarts Social", "Anime World", "K-Pop Stan Twitter"]
-    )
-    
+    st.markdown("### ⚙️ SIMULATOR SETTINGS")
+    universe = st.selectbox("Feed Sector", ["Global Feed", "Hogwarts Network", "Anime Hub", "K-Pop Twitter"])
     st.divider()
-    if st.button("Reset Game 🔄"):
-        st.session_state.followers = 100
-        st.session_state.reputation = "Neutral 😄"
+    st.markdown("### 📊 LIFE STATS")
+    st.metric("Followers 👥", f"{st.session_state.followers:,}")
+    st.progress(st.session_state.clout / 100, text=f"Clout Level: {st.session_state.clout}%")
+    
+    if st.button("Clear Profile 🔄"):
+        st.session_state.followers = 1240
+        st.session_state.clout = 50
         st.session_state.history = []
         st.rerun()
 
-# Main Application Feed
-st.title("📱 Status Simulator")
-st.caption(f"Currently broadcasting to the **{universe}** universe.")
+# Header Dashboard
+st.markdown(f"""
+<div class="header-container">
+    <div>
+        <h2 style='margin:0;'>STATUS AI</h2>
+        <span style='color:#71767b;'>Sector: {universe}</span>
+    </div>
+    <div class="avatar">ME</div>
+</div>
+""", unsafe_allow_html=True)
 
-user_post = st.text_area("What are you thinking?", placeholder="Type your post here...", max_chars=280)
+# Post Creator Input Box
+user_post = st.text_area("", placeholder="What's your hot take today?...", max_chars=280, label_visibility="collapsed")
 
-if st.button("🚀 Post to Feed"):
-    if user_post.strip() == "":
-        st.error("You can't post an empty thoughts draft!")
-    else:
-        change = random.randint(-40, 120)
-        st.session_state.followers = max(0, st.session_state.followers + change)
-        
-        if st.session_state.followers > 500:
-            st.session_state.reputation = "Influencer 🌟"
-        elif st.session_state.followers < 20:
-            st.session_state.reputation = "Cancelled ❌"
-        else:
-            st.session_state.reputation = "Neutral 😄"
+if st.button("✨ Publish Post"):
+    if user_post.strip() != "":
+        with st.spinner("Processing network metrics..."):
+            time.sleep(0.6) # Short delay to give it an authentic application feel
             
-        mock_comments = {
-            "Standard Internet": [("@troll_master", "Lmao delete this immediately."), ("@bestie_99", "Preach! Louder for the people in the back! 🙌"), ("@brand_bot", "Check your DMs for a collab deal!")],
-            "Hogwarts Social": [("@draco_m", "My father will hear about this awful post."), ("@hermione_g", "Honestly, did you even read Hogwarts: A History?"), ("@potter_j", "Brilliant post mate, Gryffindor wins 10 points.")],
-            "Anime World": [("@sub_over_dub", "This post is filler arc material."), ("@hokage_hopeful", "Believe it! This is a top-tier take."), ("@senpai_noticed", "Nani? What does this even mean??")],
-            "K-Pop Stan Twitter": [("@orbit_universe", "Clear the searches and stream the new music video instead."), ("@bias_stan", "Omo! This is literal perfection."), ("@anti_patrol", "Delete this before the fandom reporting accounts see it.")]
-        }
-        
-        current_comments = mock_comments.get(universe, mock_comments["Standard Internet"])
-        
-        st.session_state.history.insert(0, {
-            "post": user_post,
-            "change": change,
-            "comments": current_comments
-        })
-        st.rerun()
+            # Simulated context analyzer logic to pick clever algorithmic replies
+            words = user_post.lower()
+            if any(w in words for w in ["hate", "bad", "worst", "trash"]):
+                sentiment = "drama"
+            elif any(w in words for w in ["love", "amazing", "best", "hype"]):
+                sentiment = "positive"
+            else:
+                sentiment = "neutral"
 
-# Display Timeline
-st.divider()
+            # Point variations
+            follower_change = random.randint(15, 250) if sentiment == "positive" else random.randint(-150, 400)
+            st.session_state.followers = max(5, st.session_state.followers + follower_change)
+            st.session_state.clout = min(100, max(0, st.session_state.clout + int(follower_change / 10)))
+
+            # Brain template pool
+            pool = {
+                "Global Feed": {
+                    "positive": [("@hype_beast", "🔥 Absolute massive win right here.", "💬"), ("@clout_chaser", "Agreed! Check your DM's let's link up.", "💎")],
+                    "drama": [("@cancel_crew", "This is why nobody likes you. Cancelled.", "❌"), ("@ratio_king", "L take + ratio + touch grass.", "💀")],
+                    "neutral": [("@lurker_john", "Hmm, interesting thought honestly.", "🤖"), ("@ad_bot", "Get cash fast! Link in bio!", "💸")]
+                },
+                "Hogwarts Network": {
+                    "positive": [("@potter_j", "Brilliant! 20 points to Gryffindor!", "🦁"), ("@granger_h", "An incredibly accurate deduction.", "📚")],
+                    "drama": [("@malfoy_d", "Wait until my father hears about this post.", "🐍"), ("@snape_p", "Insolent. Detention for this.", "🧪")],
+                    "neutral": [("@weasley_r", "Bloody hell, that's wild.", "🧹"), ("@lovegood_l", "The Nargles influenced this post.", "✨")]
+                }
+            }
+            
+            universe_pool = pool.get(universe, pool["Global Feed"])
+            comments = universe_pool.get(sentiment, universe_pool["neutral"])
+
+            st.session_state.history.insert(0, {
+                "text": user_post,
+                "change": follower_change,
+                "comments": comments,
+                "timestamp": "Just now"
+            })
+            st.rerun()
+
+# Main Interactive Feed Feed Timeline Display Loop
 if not st.session_state.history:
-    st.info("Your feed is empty. Write your very first post above!")
+    st.markdown("<div style='text-align:center; color:#71767b; padding:40px;'>Your profile feed is completely quiet. Drop your first post above!</div>", unsafe_allow_html=True)
 else:
-    for idx, item in enumerate(st.session_state.history):
+    for post in st.session_state.history:
+        badge_html = f'<div class="stat-badge">📈 +{post["change"]} followers</div>' if post["change"] >= 0 else f'<div class="stat-badge-down">📉 {post["change"]} followers</div>'
+        
+        # Base structural layout wrapper
         st.markdown(f"""
-        <div class="feed-box">
-            <strong>You Posted:</strong><br>
-            {item['post']}<br>
-            <small style="color: {'green' if item['change'] >= 0 else 'red'};">
-                {'📈 +' if item['change'] >= 0 else '📉 '}{item['change']} followers
-            </small>
-        </div>
+        <div class="feed-card">
+            <div class="user-header">
+                <div class="avatar" style="background:#1d9bf0;">U</div>
+                <div>
+                    <span class="username">You</span> <span class="handle">@anonymous_user • {post['timestamp']}</span>
+                </div>
+            </div>
+            <div class="post-text">{post['text']}</div>
+            {badge_html}
+            <div class="comment-section">
         """, unsafe_allow_html=True)
         
-        for user, comment in item["comments"]:
+        # Secondary loop rendering responses seamlessly
+        for handle, text, emo in post["comments"]:
             st.markdown(f"""
-            <div class="comment-box">
-                <strong>{user}</strong>: {comment}
-            </div>
+                <div class="comment-item">
+                    <div class="npc-avatar">{emo}</div>
+                    <div>
+                        <span class="username" style="font-size:14px;">{handle}</span>
+                        <div style="font-size:14px; color:#e7e9ea; margin-top:2px;">{text}</div>
+                    </div>
+                </div>
             """, unsafe_allow_html=True)
+            
+        st.markdown("</div></div>", unsafe_allow_html=True)
